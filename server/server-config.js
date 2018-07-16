@@ -4,9 +4,9 @@ const config = {
 		dir: 'public'
 	},
 	mysql: {
-		host: "localhost",
+		host: "192.168.1.104",
 		port: 3306,
-		user: "root",
+		user: "dan",
 		password: "dgard00382600",
 		database: "modern_retro"
 	}

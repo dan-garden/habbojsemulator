@@ -17,7 +17,7 @@ const io = require('socket.io').listen(
 
 app.use(express.static(config.client.dir));
 
-db.connect(function (err) {
+db.connect((err) => {
 	if (err) console.error(err);
 })
 
@@ -28,6 +28,7 @@ class ServerInterface {
 		this.io = io.of('/server_interface');
 
 		this.bindSockets();
+		this.bindDataRequests();
 
 		this.connections = [];
 		this.roomSockets = {};
@@ -54,6 +55,20 @@ class ServerInterface {
 
 
 		});
+	}
+
+	bindDataRequests() {
+		// Use middleware to set the default Content-Type
+		app.use(function (req, res, next) {
+			res.header('Content-Type', 'application/json');
+			next();
+		});
+
+		app.post('/api/available_rooms', (req, res) => {
+			db.query(`SELECT * FROM rooms`, (err, result) => {
+				res.send(JSON.stringify(result));
+			});
+		})
 	}
 
 	validateSession(handshake, fn) {
@@ -91,6 +106,7 @@ class ServerInterface {
 	updateRoomSocket(socket, roomId) {
 		const roomSocketPath = this.roomSocketPath(roomId);
 		db.query(`SELECT * FROM rooms WHERE id='${roomId}'`, (err, roomResult) => {
+			
 			db.query(`SELECT * FROM room_models WHERE id='${roomResult[0].model_name}'`, (err, modelResult) => {
 				roomResult[0].model = modelResult[0];
 				this.io.to(roomSocketPath).emit('render_room', roomResult[0]);

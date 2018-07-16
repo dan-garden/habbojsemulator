@@ -35,7 +35,7 @@
       }
 
       this.queries = {
-
+        
       }
     }
 
@@ -63,7 +63,7 @@
         if(!dialog) {
           dialog = document.createElement('dialog');
           dialog.id = `client-${type}-dialog`;
-          document.getElementById('client').appendChild(dialog);
+          document.getElementById('client').append(dialog);
         }
         this.dialogs[type] = true;
         dialog.showModal();
@@ -90,7 +90,7 @@
       // })
 
       this.io.on("client_connected", data => {
-        console.log('Client Connected');
+        this.log('Client Connected');
         this.renderClient(data);
       })
 
@@ -99,16 +99,44 @@
       });
     }
 
+    postJSON(url, data, fn) {
+      if(!(data instanceof FormData)) {
+          data = this.objectToBody(data);
+      }
+      fetch(url, {
+          body: data,
+          method: 'POST'
+      })
+      .then(function (response) {
+          return response.json();
+      })
+      .then(function (response) {
+          if(typeof fn === "function") {
+              fn(response);
+          }
+      });
+    }
+
+    objectToBody(object) {
+      const body = new FormData();
+      const keys = Object.keys(object);
+      for(let i = 0; i < keys.length; i++) {
+          let key = keys[i];
+          body.append(key, object[key]);
+      }
+      return body;
+    }
+
+    requestData(type, params, fn) {
+      this.postJSON('api/'+type, params, fn);
+    }
+
     renderClientLoader(data) {
       console.log(data);
     }
 
     renderClient(data) {
       console.log(data);
-    }
-
-    requestData(type) {
-
     }
 
     filterHeightMap(heightmap) {
@@ -342,19 +370,37 @@
       })
     }
 
-    loadRoomsList(fn) {
-      this.requestData('load_rooms_list', fn);
-    }
-
     renderRoomsList(dialog, roomsList) {
+      dialog.innerHTML = '';
+      const roomsListHeaderDom = document.createElement('h3');
+      roomsListHeaderDom.innerText = 'Browse Rooms';
+      dialog.append(roomsListHeaderDom);
+      const roomsListDom = document.createElement('ul');
+      for(let i = 0; i < roomsList.length; i++) {
+        let listedRoom = roomsList[i];
+        let listedRoomDom = document.createElement('li');
+        let listedRoomLinkDom = document.createElement('a');
+        listedRoomLinkDom.innerText = listedRoom.caption;
+        listedRoomLinkDom.href = '#';
+        listedRoomLinkDom.addEventListener('click', e => {
+          e.preventDefault();
+          this.loadRoom(listedRoom.id);
+          // this.toggleRoomDialog();
+        })
 
+
+        listedRoomDom.append(listedRoomLinkDom);
+        roomsListDom.append(listedRoomDom);
+      }
+
+      dialog.append(roomsListDom);
     }
 
 
     toggleRoomDialog() {
       this.toggleDialog('rooms', (dialog, open) => {
         if(open) {
-          this.loadRoomsList(roomsList => {
+          this.requestData('available_rooms', this.state.userData, roomsList => {
             this.renderRoomsList(dialog, roomsList);
           });
         } else {
