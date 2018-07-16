@@ -35,7 +35,7 @@
       }
 
       this.queries = {
-        
+
       }
     }
 
@@ -59,10 +59,11 @@
 
     toggleDialog(type, fn) {
       let dialog = document.getElementById(`client-${type}-dialog`);
-      if(!this.dialogs[type]) {
-        if(!dialog) {
-          dialog = document.createElement('dialog');
-          dialog.id = `client-${type}-dialog`;
+      if (!this.dialogs[type]) {
+        if (!dialog) {
+          dialog = create('dialog', {
+            id: `client-${type}-dialog`
+          });
           document.getElementById('client').append(dialog);
         }
         this.dialogs[type] = true;
@@ -89,6 +90,12 @@
       //   this.renderClientLoader(data);
       // })
 
+
+      this.io.on("disconnect", data => {
+        this.serverDisconnected();
+      });
+
+
       this.io.on("client_connected", data => {
         this.log('Client Connected');
         this.renderClient(data);
@@ -100,35 +107,45 @@
     }
 
     postJSON(url, data, fn) {
-      if(!(data instanceof FormData)) {
-          data = this.objectToBody(data);
+      if (!(data instanceof FormData)) {
+        data = this.objectToBody(data);
       }
       fetch(url, {
           body: data,
           method: 'POST'
-      })
-      .then(function (response) {
+        })
+        .then(function (response) {
           return response.json();
-      })
-      .then(function (response) {
-          if(typeof fn === "function") {
-              fn(response);
+        })
+        .then(function (response) {
+          if (typeof fn === "function") {
+            fn(response);
           }
-      });
+        });
     }
 
     objectToBody(object) {
       const body = new FormData();
       const keys = Object.keys(object);
-      for(let i = 0; i < keys.length; i++) {
-          let key = keys[i];
-          body.append(key, object[key]);
+      for (let i = 0; i < keys.length; i++) {
+        let key = keys[i];
+        body.append(key, object[key]);
       }
       return body;
     }
 
     requestData(type, params, fn) {
-      this.postJSON('api/'+type, params, fn);
+      this.postJSON('api/' + type, params, fn);
+    }
+
+    serverDisconnected() {
+      this.toggleDialog('disconnect', (dialog, open) => {
+        if (open) {
+          dialog.append(create('h3', null, 'Client Disconnected'));
+        } else {
+
+        }
+      })
     }
 
     renderClientLoader(data) {
@@ -372,26 +389,30 @@
 
     renderRoomsList(dialog, roomsList) {
       dialog.innerHTML = '';
-      const roomsListHeaderDom = document.createElement('h3');
-      roomsListHeaderDom.innerText = 'Browse Rooms';
-      dialog.append(roomsListHeaderDom);
-      const roomsListDom = document.createElement('ul');
-      for(let i = 0; i < roomsList.length; i++) {
-        let listedRoom = roomsList[i];
-        let listedRoomDom = document.createElement('li');
-        let listedRoomLinkDom = document.createElement('a');
-        listedRoomLinkDom.innerText = listedRoom.caption;
-        listedRoomLinkDom.href = '#';
+      dialog.append(create('h3', null, 'Browse Rooms'));
+
+      const roomsListDom = create('ul', null, roomsList.map(listedRoom => {
+        let countColor = 'green';
+
+        if (listedRoom.users_now > (listedRoom.users_max / 2) && listedRoom.users_now < listedRoom.users_max) {
+          countColor = 'orange';
+        } else if (listedRoom.users_now >= listedRoom.users_max) {
+          countColor = 'red';
+        }
+        let listedRoomLinkDom = create('a', {
+          href: '#'
+        }, [
+          create('span', null, listedRoom.users_now, ['user-count', countColor]),
+          create('span', null, listedRoom.caption, 'user-caption')
+        ]);
+
         listedRoomLinkDom.addEventListener('click', e => {
           e.preventDefault();
           this.loadRoom(listedRoom.id);
           // this.toggleRoomDialog();
-        })
-
-
-        listedRoomDom.append(listedRoomLinkDom);
-        roomsListDom.append(listedRoomDom);
-      }
+        });
+        return create('li', null, listedRoomLinkDom)
+      }));
 
       dialog.append(roomsListDom);
     }
@@ -399,12 +420,12 @@
 
     toggleRoomDialog() {
       this.toggleDialog('rooms', (dialog, open) => {
-        if(open) {
+        if (open) {
           this.requestData('available_rooms', this.state.userData, roomsList => {
             this.renderRoomsList(dialog, roomsList);
           });
         } else {
-          
+
         }
       })
     }

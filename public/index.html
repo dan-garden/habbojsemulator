@@ -14,6 +14,37 @@
     </head>
     <body>
         <div id="client"></div>
+        <script type="text/javascript">
+            function create(type='div', attributes, inner, classes=[]) {
+                let dom = document.createElement(type);
+                if(attributes) {
+                    let attributeKeys = Object.keys(attributes);
+                    attributeKeys.forEach(attributeKey => {
+                        dom.setAttribute(attributeKey, attributes[attributeKey]);
+                    });
+                }
+                if(classes) {
+                    if(typeof classes === 'string') {
+                        dom.classList.add(classes);
+                    } else {
+                        classes.forEach(className => dom.classList.add(className));
+                    }
+                }
+                if(inner) {
+                    if(inner instanceof HTMLElement) {
+                        dom.append(inner);
+                    } else if(typeof inner === 'object') {
+                        let innerKeys = Object.keys(inner);
+                        innerKeys.forEach(innerKey => {
+                            dom.append(inner[innerKey]);
+                        })
+                    } else {
+                        dom.innerHTML = inner;
+                    }
+                }
+                return dom;
+            }
+        </script>
         <script src="scripts/v1.js"></script>
     </body>
 </html>
