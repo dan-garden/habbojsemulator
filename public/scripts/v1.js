@@ -72,7 +72,9 @@
         this.dialogs[type] = false;
         dialog.close();
       }
-      fn(dialog, this.dialogs[type]);
+      if(typeof fn === 'function') {
+        fn(dialog, this.dialogs[type]);
+      }
     }
 
     setupClient() {
@@ -90,6 +92,9 @@
       //   this.renderClientLoader(data);
       // })
 
+      this.io.on("connect", data => {
+        this.serverConnected();
+      })
 
       this.io.on("disconnect", data => {
         this.serverDisconnected();
@@ -142,8 +147,14 @@
       this.toggleDialog('disconnect', (dialog, open) => {
         if (open) {
           dialog.append(create('h3', null, 'Client Disconnected'));
-        } else {
+        }
+      })
+    }
 
+    serverConnected() {
+      this.toggleDialog('disconnect', (dialog, open) => {
+        if (open) {
+          this.toggleDialog('disconnect');
         }
       })
     }
