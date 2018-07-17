@@ -53,7 +53,6 @@ class ServerInterface {
 				this.connectToRoomSocket(socket, data.roomId);
 			});
 
-
 		});
 	}
 
@@ -63,6 +62,13 @@ class ServerInterface {
 			res.header('Content-Type', 'application/json');
 			next();
 		});
+
+		app.post('/api/user_login', (req, res) => {
+			const username = req.param('username');
+			const password = req.param('password');
+
+			this.log({type: 'log', args: ['test']});
+		})
 
 		app.post('/api/available_rooms', (req, res) => {
 			db.query(`SELECT * FROM rooms`, (err, result) => {
