@@ -57,6 +57,7 @@ class ServerInterface {
 	}
 
 	bindDataRequests() {
+		app.use('/client', express.static('public/client.html'))
 		// Use middleware to set the default Content-Type
 		app.use(function (req, res, next) {
 			res.header('Content-Type', 'application/json');
