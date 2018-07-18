@@ -42,7 +42,6 @@ class ClientInterface {
 
   error() {
     const args = Array.from(arguments);
-    args.unshift('\x1b[41m', 'console.error', '\x1b[0m');
     this.io.emit('log', {
       type: 'error',
       args
@@ -51,7 +50,6 @@ class ClientInterface {
 
   log() {
     const args = Array.from(arguments);
-    args.unshift('\x1b[44m', 'console.log', '\x1b[0m');
     this.io.emit('log', {
       type: 'log',
       args
@@ -442,8 +440,6 @@ class ClientInterface {
         Helper.requestData('available_rooms', this.state.userData, roomsList => {
           this.renderRoomsList(dialog, roomsList);
         });
-      } else {
-
       }
     })
   }

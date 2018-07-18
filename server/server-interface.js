@@ -17,14 +17,17 @@ const io = require('socket.io').listen(
 
 app.use(express.static(config.client.dir));
 
-db.connect((err) => {
-	if (err) console.error(err);
-})
-
-console.log("Server Running On: http://localhost:" + config.client.port);
 
 class ServerInterface {
 	constructor() {
+		db.connect((err) => {
+			if(err) {
+				this.error(err);
+				process.exit();
+			}
+		})
+
+
 		this.io = io.of('/server_interface');
 
 		this.bindSockets();
@@ -32,14 +35,23 @@ class ServerInterface {
 
 		this.connections = [];
 		this.roomSockets = {};
+
+		console.log("Server started on http://localhost:" + config.client.port);
 	}
 
 	log(data) {
+		if(typeof data === 'string') { data = {type: 'log', args: [data]}; }
 		if(data.type === 'error') {
+			data.args.unshift('\x1b[41m', 'console.error', '\x1b[0m');
 			console.error.apply(null, data.args);
-		} else {
+		} else if(data.type === 'log') {
+			data.args.unshift('\x1b[44m', 'console.log', '\x1b[0m');
 			console.log.apply(null, data.args);
 		}
+	}
+
+	error(msg) {
+		this.log({type: 'error', args: [msg]})
 	}
 
 	bindSockets() {
@@ -52,7 +64,6 @@ class ServerInterface {
 			socket.on('load_room', data => {
 				this.connectToRoomSocket(socket, data.roomId);
 			});
-
 		});
 	}
 
@@ -65,10 +76,16 @@ class ServerInterface {
 		});
 
 		app.post('/api/user_login', (req, res) => {
-			const username = req.param('username');
-			const password = req.param('password');
+			const username = req.params.username;
+			const password = req.params.password;
 
-			this.log({type: 'log', args: ['test']});
+			this.log({
+				type: 'log',
+				args: [
+					'Username:', username,
+					'Password:', password
+				]
+			});
 		})
 
 		app.post('/api/available_rooms', (req, res) => {
@@ -113,7 +130,7 @@ class ServerInterface {
 	updateRoomSocket(socket, roomId) {
 		const roomSocketPath = this.roomSocketPath(roomId);
 		db.query(`SELECT * FROM rooms WHERE id='${roomId}'`, (err, roomResult) => {
-			
+			if(err) this.error(err);
 			db.query(`SELECT * FROM room_models WHERE id='${roomResult[0].model_name}'`, (err, modelResult) => {
 				roomResult[0].model = modelResult[0];
 				this.io.to(roomSocketPath).emit('render_room', roomResult[0]);
